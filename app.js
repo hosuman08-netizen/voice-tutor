@@ -1,4 +1,7 @@
 
+/* LEGION_WAVE_20_today_counter */
+try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw_p28_voice_sk_today_counter')||'{}');if(_o.d!==_dk)_o={d:_dk,n:0};_o.n=(_o.n||0)+1;localStorage.setItem('lw_p28_voice_sk_today_counter',JSON.stringify(_o));}catch(e){}
+
 (function(){
   var root=document.getElementById('app');
   var lines=['Nice to meet you.','How was your day?','Could you say that again?','I will practice every day.','Let us ship it today.','Be like water.','One more rep.','Practice makes progress.','I am getting better.','See you tomorrow.','Speak slowly and clearly.','정진 is every day.'];

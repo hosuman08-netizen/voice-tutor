@@ -37,7 +37,7 @@
       +'<button class="sec" id="pin">'+(pinned?'핀 해제':'핀')+'</button></div>'
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</div>';
-    document.getElementById('next').onclick=function(){i=(i+1)%lines.length;render();};
+    document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%lines.length;render();};
     document.getElementById('pin').onclick=function(){
       var p=loadPin(); var line=lines[i]; var ix=p.indexOf(line);
       if(ix>=0) p.splice(ix,1); else p.unshift(line);

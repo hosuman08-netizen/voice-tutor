@@ -5,7 +5,7 @@
   var i=0, left=0, timer=null;
   function render(){
     var sc=0;try{sc=(JSON.parse(localStorage.getItem('vst_streak')||'{}').count)||0}catch(e){}
-    root.innerHTML='<div class="card"><p class="sub">문장 보고 따라 말하기 · 스트릭 '+sc+'일</p><div style="font-size:18px;min-height:48px" id="line">'+lines[i]+'</div><div style="font-size:28px;margin:12px 0" id="cd">30</div><div class="row"><button id="start">30초 시작</button><button class="sec" id="next">다음 문장</button></div></div>';
+    root.innerHTML='<div class="card"><p class="sub">문장 보고 따라 말하기 · 스트릭 '+sc+'일 · 세션 '+(+(localStorage.getItem('vst_sessions')||0))+'</p><div style="font-size:18px;min-height:48px" id="line">'+lines[i]+'</div><div style="font-size:28px;margin:12px 0" id="cd">30</div><div class="row"><button id="start">30초 시작</button><button class="sec" id="next">다음 문장</button></div></div>';
     document.getElementById('next').onclick=function(){i=(i+1)%lines.length;render();};
     document.getElementById('start').onclick=function(){
       left=30; clearInterval(timer);

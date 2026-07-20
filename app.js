@@ -31,21 +31,32 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     var sess=+(localStorage.getItem('vst_sessions')||0);
     var pins=loadPin();
     var td=todayBest();
-    var pinned=pins.indexOf(lines[i])>=0;
-    root.innerHTML='<div class="card"><p class="sub">문장 '+lines.length+' · 🔥'+sc+'일 · 세션 '+sess
-      +' · 오늘 '+td.n+'회 · 진행 '+(i+1)+'/'+lines.length+'</p>'
-      +'<div style="font-size:18px;min-height:48px" id="line">'+(pinned?'📌 ':'')+lines[i]+'</div>'
+    var custom0=JSON.parse(localStorage.getItem('vst_custom')||'[]'); var all0=lines.concat(custom0); if(i>=all0.length)i=0; var pinned=pins.indexOf(all0[i])>=0;
+    var best=+(localStorage.getItem('vst_best')||0);
+    var custom=JSON.parse(localStorage.getItem('vst_custom')||'[]');
+    var allLines=lines.concat(custom);
+    if(i>=allLines.length) i=0;
+    root.innerHTML='<div class="card"><p class="sub">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
+      +' · 오늘 '+td.n+'회 · 진행 '+(i+1)+'/'+allLines.length+'</p>'
+      +'<div style="font-size:18px;min-height:48px" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
       +'<div style="font-size:28px;margin:12px 0" id="cd">30</div>'
-      +'<div class="row"><button id="start">30초 시작</button><button class="sec" id="next">다음</button>'
+      +'<div class="row"><button id="start">30초</button><button class="sec" id="start15">15초</button><button class="sec" id="next">다음</button>'
       +'<button class="sec" id="pin">'+(pinned?'핀 해제':'핀')+'</button></div>'
+      +'<div class="row" style="margin-top:8px"><input id="customLine" placeholder="내 문장 추가" style="flex:1"/><button class="sec" id="addLine">+</button></div>'
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</div>';
-    document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%lines.length;render();};
+    document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%allLines.length;render();};
     document.getElementById('pin').onclick=function(){
-      var p=loadPin(); var line=lines[i]; var ix=p.indexOf(line);
+      var p=loadPin(); var line=allLines[i]; var ix=p.indexOf(line);
       if(ix>=0) p.splice(ix,1); else p.unshift(line);
       savePin(p); render();
       try{legionTrack('pin',{on:ix<0})}catch(e){}
+    };
+    document.getElementById('addLine').onclick=function(){
+      var v=(document.getElementById('customLine').value||'').trim();
+      if(!v)return;
+      custom.unshift(v); localStorage.setItem('vst_custom',JSON.stringify(custom.slice(0,20)));
+      i=0; render(); try{legionTrack('custom_line',{})}catch(e){}
     };
     var pl=document.getElementById('pinList');
     if(pl){
@@ -55,28 +66,30 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       Array.prototype.forEach.call(pl.querySelectorAll('[data-p]'),function(b){
         b.onclick=function(){
           var t=pins[+b.getAttribute('data-p')];
-          var j=lines.indexOf(t);
+          var j=allLines.indexOf(t);
           if(j>=0){i=j;render();}
         };
       });
     }
-    document.getElementById('start').onclick=function(){
-      left=30; clearInterval(timer); document.getElementById('cd').textContent=left;
+    function runTimer(sec){
+      left=sec; clearInterval(timer); document.getElementById('cd').textContent=left;
       timer=setInterval(function(){
         left--; var el=document.getElementById('cd'); if(el) el.textContent=left;
         if(left<=0){
           clearInterval(timer);
           try{localStorage.setItem('vst_sessions', (+(localStorage.getItem('vst_sessions')||0))+1);}catch(e){}
-          bumpToday(30);
-          i=(i+1)%lines.length;
+          bumpToday(sec);
+          i=(i+1)%allLines.length;
           try{var k='vst_streak';var d=JSON.parse(localStorage.getItem(k)||'{}');var t=new Date().toDateString();
-            if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t; var best=+(localStorage.getItem('vst_best')||0); if(d.count>best)localStorage.setItem('vst_best',d.count); localStorage.setItem(k,JSON.stringify(d));}
+            if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t; var bestN=+(localStorage.getItem('vst_best')||0); if(d.count>bestN)localStorage.setItem('vst_best',d.count); localStorage.setItem(k,JSON.stringify(d));}
           }catch(e){}
-          try{legionTrack('activate',{})}catch(e){}
+          try{legionTrack('activate',{sec:sec})}catch(e){}
           render();
         }
       },1000);
-    };
+    }
+    document.getElementById('start').onclick=function(){runTimer(30);};
+    document.getElementById('start15').onclick=function(){runTimer(15);};
   }
   try{legionTrack('session_start',{})}catch(e){}
   render();

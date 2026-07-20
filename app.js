@@ -67,7 +67,7 @@
           bumpToday(30);
           i=(i+1)%lines.length;
           try{var k='vst_streak';var d=JSON.parse(localStorage.getItem(k)||'{}');var t=new Date().toDateString();
-            if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t;localStorage.setItem(k,JSON.stringify(d));}
+            if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t; var best=+(localStorage.getItem('vst_best')||0); if(d.count>best)localStorage.setItem('vst_best',d.count); localStorage.setItem(k,JSON.stringify(d));}
           }catch(e){}
           try{legionTrack('activate',{})}catch(e){}
           render();

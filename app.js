@@ -9,7 +9,7 @@
     document.getElementById('next').onclick=function(){i=(i+1)%lines.length;render();};
     document.getElementById('start').onclick=function(){
       left=30; clearInterval(timer);
-      timer=setInterval(function(){left--;document.getElementById('cd').textContent=left;if(left<=0){clearInterval(timer);
+      timer=setInterval(function(){left--;document.getElementById('cd').textContent=left;if(left<=0){clearInterval(timer); i=(i+1)%lines.length; /* autoNext */
           try{var k='vst_streak';var d=JSON.parse(localStorage.getItem(k)||'{}');var t=new Date().toDateString();
             if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t;localStorage.setItem(k,JSON.stringify(d));}
           }catch(e){}

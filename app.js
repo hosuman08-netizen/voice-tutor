@@ -1,7 +1,7 @@
 
 (function(){
   var root=document.getElementById('app');
-  var lines=['Nice to meet you.','How was your day?','Could you say that again?','I will practice every day.','Let us ship it today.'];
+  var lines=['Nice to meet you.','How was your day?','Could you say that again?','I will practice every day.','Let us ship it today.','Be like water.','One more rep.'];;
   var i=0, left=0, timer=null;
   function render(){
     var sc=0;try{sc=(JSON.parse(localStorage.getItem('vst_streak')||'{}').count)||0}catch(e){}

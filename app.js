@@ -26,6 +26,16 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       return d;
     }catch(e){return{n:0,best:0};}
   }
+  function weekPractice(){
+    var out=[];
+    for(var i=6;i>=0;i--){
+      var d=new Date(); d.setDate(d.getDate()-i);
+      var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+      try{ out.push(JSON.parse(localStorage.getItem('vst_day_'+k)||'{"n":0}').n||0); }
+      catch(e){ out.push(0); }
+    }
+    return out;
+  }
   function render(){
     var sc=0;try{sc=(JSON.parse(localStorage.getItem('vst_streak')||'{}').count)||0}catch(e){}
     var sess=+(localStorage.getItem('vst_sessions')||0);
@@ -36,8 +46,13 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     var custom=JSON.parse(localStorage.getItem('vst_custom')||'[]');
     var allLines=lines.concat(custom);
     if(i>=allLines.length) i=0;
+    var goal=3, gPct=Math.min(100,Math.round((td.n||0)/goal*100));
+    var wp=weekPractice(), mx=Math.max.apply(null,wp.concat([1]));
+    var active=wp.filter(function(n){return n>0;}).length;
     root.innerHTML='<div class="card"><p class="sub">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
-      +' · 오늘 '+td.n+'회 · 진행 '+(i+1)+'/'+allLines.length+'</p>'
+      +' · 오늘 '+(td.n||0)+'/'+goal+' · 7일 활동일 '+active+' · 진행 '+(i+1)+'/'+allLines.length+'</p>'
+      +'<div style="height:6px;background:#1c1826;border-radius:4px;margin:8px 0;overflow:hidden"><i style="display:block;height:100%;width:'+gPct+'%;background:linear-gradient(90deg,#67e8f9,#e0b552)"></i></div>'
+      +'<div style="display:flex;align-items:flex-end;gap:3px;height:28px;margin-bottom:8px">'+wp.map(function(n){var h=Math.max(3,Math.round(n/mx*24));return '<div style="flex:1;height:'+h+'px;background:'+(n>0?'#67e8f9':'#2a2438')+';border-radius:2px"></div>';}).join('')+'</div>'
       +'<div style="font-size:18px;min-height:48px" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
       +'<div style="font-size:28px;margin:12px 0" id="cd">30</div>'
       +'<div class="row"><button id="start">30초</button><button class="sec" id="start15">15초</button><button class="sec" id="next">다음</button>'

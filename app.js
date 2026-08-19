@@ -83,6 +83,15 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     speechSynthesis.speak(u);
     return u.rate;
   }
+  function replayN(){
+    try{ return Math.max(0, +(localStorage.getItem('vst_replay_'+dayKey())||0)); }
+    catch(e){ return 0; }
+  }
+  function bumpReplay(){
+    var n=replayN()+1;
+    try{ localStorage.setItem('vst_replay_'+dayKey(), String(n)); }catch(e){}
+    return n;
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -131,8 +140,9 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         var on=ttsRate()===r;
         return '<button class="'+(on?'':'sec')+'" data-rate="'+r+'">'+r+'×</button>';
       }).join('')+'</div>'
-      +'<button class="sec" id="ttsReplay" style="width:100%;margin-top:8px">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
-      +'<p class="sub" style="margin-top:4px">속도칩+재듣기 · 브라우저 TTS만 · STT/점수 없음</p>'
+      +'<div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="ttsReplay" style="flex:1">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
+      +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span></div>'
+      +'<p class="sub" style="margin-top:4px">속도칩+재듣기 · 횟수칩=오늘만 · 브라우저 TTS만 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -185,9 +195,12 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       var line=allLines[i]||'';
       if(!window.speechSynthesis){ rp.textContent='이 브라우저 TTS 없음'; return; }
       var rate=speakLine(line);
+      var n=bumpReplay();
+      var chip=document.getElementById('replayChip');
+      if(chip) chip.textContent='재듣기 '+n;
       rp.textContent='재듣기 · '+ttsRate()+'× 유지';
       setTimeout(function(){ var el=document.getElementById('ttsReplay'); if(el) el.textContent='재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음'; },900);
-      try{legionTrack('tts_replay',{rate:rate})}catch(e){}
+      try{legionTrack('tts_replay',{rate:rate,n:n})}catch(e){}
     };
     var sp=document.getElementById('speedChips');
     if(sp) Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(b){

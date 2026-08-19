@@ -74,6 +74,15 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     if(TTS_RATES.indexOf(r)<0) return;
     try{localStorage.setItem('vst_tts_rate',r);}catch(e){}
   }
+  function speakLine(line){
+    if(!window.speechSynthesis) return false;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    var u=new SpeechSynthesisUtterance(line||'');
+    u.lang=/[가-힯]/.test(line||'')?'ko-KR':'en-US';
+    u.rate=parseFloat(ttsRate())||0.9;
+    speechSynthesis.speak(u);
+    return u.rate;
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -122,7 +131,8 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         var on=ttsRate()===r;
         return '<button class="'+(on?'':'sec')+'" data-rate="'+r+'">'+r+'×</button>';
       }).join('')+'</div>'
-      +'<p class="sub" style="margin-top:4px">속도칩 · 브라우저 TTS만 · STT/점수 없음</p>'
+      +'<button class="sec" id="ttsReplay" style="width:100%;margin-top:8px">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
+      +'<p class="sub" style="margin-top:4px">속도칩+재듣기 · 브라우저 TTS만 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -167,12 +177,17 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     if(ttsBtn) ttsBtn.onclick=function(){
       var line=allLines[i]||'';
       if(!window.speechSynthesis){ ttsBtn.textContent='이 브라우저 TTS 없음'; return; }
-      try{ speechSynthesis.cancel(); }catch(e){}
-      var u=new SpeechSynthesisUtterance(line);
-      u.lang=/[가-힯]/.test(line)?'ko-KR':'en-US';
-      u.rate=parseFloat(ttsRate())||0.9;
-      speechSynthesis.speak(u);
-      try{legionTrack('tts_cue',{lang:u.lang,rate:u.rate})}catch(e){}
+      var rate=speakLine(line);
+      try{legionTrack('tts_cue',{lang:/[가-힯]/.test(line)?'ko-KR':'en-US',rate:rate})}catch(e){}
+    };
+    var rp=document.getElementById('ttsReplay');
+    if(rp) rp.onclick=function(){
+      var line=allLines[i]||'';
+      if(!window.speechSynthesis){ rp.textContent='이 브라우저 TTS 없음'; return; }
+      var rate=speakLine(line);
+      rp.textContent='재듣기 · '+ttsRate()+'× 유지';
+      setTimeout(function(){ var el=document.getElementById('ttsReplay'); if(el) el.textContent='재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음'; },900);
+      try{legionTrack('tts_replay',{rate:rate})}catch(e){}
     };
     var sp=document.getElementById('speedChips');
     if(sp) Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(b){

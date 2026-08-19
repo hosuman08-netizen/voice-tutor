@@ -92,6 +92,20 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     try{ localStorage.setItem('vst_replay_'+dayKey(), String(n)); }catch(e){}
     return n;
   }
+  function lineReplayKey(line){ return String(line||'').slice(0,80); }
+  function replayByLine(){
+    try{
+      var o=JSON.parse(localStorage.getItem('vst_replay_line_'+dayKey())||'{}');
+      return o&&typeof o==='object'&&!Array.isArray(o)?o:{};
+    }catch(e){return {};}
+  }
+  function bumpLineReplay(line){
+    var m=replayByLine();
+    var k=lineReplayKey(line);
+    m[k]=(+m[k]||0)+1;
+    try{ localStorage.setItem('vst_replay_line_'+dayKey(), JSON.stringify(m)); }catch(e){}
+    return m[k];
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -142,7 +156,11 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       }).join('')+'</div>'
       +'<div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="ttsReplay" style="flex:1">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
       +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span></div>'
-      +'<p class="sub" style="margin-top:4px">속도칩+재듣기 · 횟수칩=오늘만 · 브라우저 TTS만 · STT/점수 없음</p>'
+      +'<div class="row" id="lineReplay" style="margin-top:8px;flex-wrap:wrap;gap:6px">'+allLines.slice(0,12).map(function(t,idx){
+        var n=replayByLine()[lineReplayKey(t)]||0;
+        return '<button class="'+(idx===i?'':'sec')+'" data-lr="'+idx+'" style="padding:6px 8px;font-size:12px">'+(idx+1)+(n?' ·'+n:'')+'</button>';
+      }).join('')+'</div>'
+      +'<p class="sub" style="margin-top:4px">문장별 재듣기 · 번호=그 문장 TTS · 현재 카드 유지 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -202,6 +220,20 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       setTimeout(function(){ var el=document.getElementById('ttsReplay'); if(el) el.textContent='재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음'; },900);
       try{legionTrack('tts_replay',{rate:rate,n:n})}catch(e){}
     };
+    var lr=document.getElementById('lineReplay');
+    if(lr) Array.prototype.forEach.call(lr.querySelectorAll('[data-lr]'),function(b){
+      b.onclick=function(){
+        var idx=+b.getAttribute('data-lr');
+        var line=allLines[idx]||'';
+        if(!line) return;
+        if(!window.speechSynthesis){ b.textContent='TTS없음'; return; }
+        var rate=speakLine(line);
+        var n=bumpLineReplay(line);
+        b.textContent=(idx+1)+' ·'+n;
+        b.className=idx===i?'':'sec';
+        try{legionTrack('tts_line_replay',{i:idx,rate:rate,n:n})}catch(e){}
+      };
+    });
     var sp=document.getElementById('speedChips');
     if(sp) Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(b){
       b.onclick=function(){

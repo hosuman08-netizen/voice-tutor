@@ -30,8 +30,38 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     return (start+1)%n;
   }
   function dayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
-  function loadPin(){try{return JSON.parse(localStorage.getItem('vst_pins')||'[]');}catch(e){return[];}}
-  function savePin(p){try{localStorage.setItem('vst_pins',JSON.stringify(p.slice(0,12)));}catch(e){}}
+  function loadPinMap(){
+    try{
+      var map=JSON.parse(localStorage.getItem('vst_pins_by_deck')||'null');
+      if(map&&typeof map==='object'&&!Array.isArray(map)) return map;
+      var old=JSON.parse(localStorage.getItem('vst_pins')||'[]');
+      if(!Array.isArray(old)) old=[];
+      map={};
+      var seen={};
+      DECK_ORDER.forEach(function(id){
+        var lines=DECKS[id].lines;
+        var arr=old.filter(function(t){return lines.indexOf(t)>=0;}).slice(0,12);
+        arr.forEach(function(t){seen[t]=1;});
+        map[id]=arr;
+      });
+      var leftover=old.filter(function(t){return !seen[t];});
+      if(leftover.length) map.greet=(map.greet||[]).concat(leftover).slice(0,12);
+      localStorage.setItem('vst_pins_by_deck',JSON.stringify(map));
+      return map;
+    }catch(e){return {};}
+  }
+  function loadPin(){
+    var map=loadPinMap();
+    var arr=map[deckId()];
+    return Array.isArray(arr)?arr.slice(0,12):[];
+  }
+  function savePin(p){
+    try{
+      var map=loadPinMap();
+      map[deckId()]=p.slice(0,12);
+      localStorage.setItem('vst_pins_by_deck',JSON.stringify(map));
+    }catch(e){}
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -94,7 +124,7 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +'<div class="row"><button class="sec" id="start15">15초</button><button class="sec" id="next">다음</button>'
       +'<button class="sec" id="pin">'+(pinned?'핀 해제':'핀')+'</button></div>'
       +'<div class="row" style="margin-top:8px"><input id="customLine" placeholder="내 문장 추가" style="flex:1"/><button class="sec" id="addLine">+</button></div>'
-      +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
+      +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · '+(DECKS[deckId()]||DECKS.greet).l+' 덱만 · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</details></div>';
     document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=nextDueFrom(i,allLines);render();};
     var dc=document.getElementById('deckChips');

@@ -123,7 +123,18 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     el.textContent='이 문장 '+(+n||0)+'회';
     el.className='chip'+(lineCountChipDim(n)?' dim':'');
     el.setAttribute('data-n', String(+n||0));
+    el.setAttribute('role','button');
+    el.title='탭=이 문장 TTS · STT/점수 없음';
     el.style.opacity=lineCountChipDim(n)?'.38':'';
+    el.style.cursor='pointer';
+  }
+  function speakChipLine(idx, lines){
+    var line=(lines||[])[idx]||'';
+    if(!line) return {ok:false,n:0,rate:false};
+    if(!window.speechSynthesis) return {ok:false,n:lineReplayN(line),rate:false};
+    var rate=speakLine(line);
+    var n=bumpLineReplay(line);
+    return {ok:true,n:n,rate:rate,line:line};
   }
   function todayBest(){
     try{
@@ -175,12 +186,12 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       }).join('')+'</div>'
       +'<div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="ttsReplay" style="flex:1">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
       +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span>'
-      +'<span class="chip'+(lineCountChipDim(lineReplayN(allLines[i]))?' dim':'')+'" id="lineReplayChip" data-n="'+lineReplayN(allLines[i])+'"'+(lineCountChipDim(lineReplayN(allLines[i]))?' style="opacity:.38"':'')+'>이 문장 '+lineReplayN(allLines[i])+'회</span></div>'
+      +'<span class="chip'+(lineCountChipDim(lineReplayN(allLines[i]))?' dim':'')+'" id="lineReplayChip" role="button" data-n="'+lineReplayN(allLines[i])+'" title="탭=이 문장 TTS · STT/점수 없음"'+(lineCountChipDim(lineReplayN(allLines[i]))?' style="opacity:.38;cursor:pointer"':' style="cursor:pointer"')+'>이 문장 '+lineReplayN(allLines[i])+'회</span></div>'
       +'<div class="row" id="lineReplay" style="margin-top:8px;flex-wrap:wrap;gap:6px">'+allLines.slice(0,12).map(function(t,idx){
         var n=lineReplayN(t);
-        return '<button class="'+(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'')+'" data-lr="'+idx+'" data-n="'+n+'" style="'+lineCountChipStyle(n)+'">'+lineCountChip(idx,n)+'</button>';
+        return '<button class="'+(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'')+'" data-lr="'+idx+'" data-n="'+n+'" title="탭=그 문장 TTS · 0회도 재생" style="'+lineCountChipStyle(n)+';cursor:pointer">'+lineCountChip(idx,n)+'</button>';
       }).join('')+'</div>'
-      +'<p class="sub" style="margin-top:4px">문장별 횟수칩 · 번호=그 문장 TTS · 현재 카드 유지 · STT/점수 없음</p>'
+      +'<p class="sub" style="margin-top:4px">0칩 탭=그 문장 TTS · 번호=그 문장 · 현재 카드 유지 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -241,22 +252,39 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       try{legionTrack('tts_replay',{rate:rate,n:n})}catch(e){}
     };
     var lr=document.getElementById('lineReplay');
+    function paintLrBtn(b, idx, n){
+      if(!b) return;
+      b.textContent=lineCountChip(idx,n);
+      b.className=(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'');
+      b.setAttribute('data-n', String(n));
+      b.style.opacity=lineCountChipDim(n)?'.38':'';
+      b.style.cursor='pointer';
+    }
     if(lr) Array.prototype.forEach.call(lr.querySelectorAll('[data-lr]'),function(b){
       b.onclick=function(){
         var idx=+b.getAttribute('data-lr');
-        var line=allLines[idx]||'';
-        if(!line) return;
-        if(!window.speechSynthesis){ b.textContent='TTS없음'; return; }
-        var rate=speakLine(line);
-        var n=bumpLineReplay(line);
-        b.textContent=lineCountChip(idx,n);
-        b.className=(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'');
-        b.setAttribute('data-n', String(n));
-        b.style.opacity=lineCountChipDim(n)?'.38':'';
-        if(idx===i) paintLineReplayChip(document.getElementById('lineReplayChip'), n);
-        try{legionTrack('tts_line_replay',{i:idx,rate:rate,n:n})}catch(e){}
+        var wasZero=lineCountChipDim(+b.getAttribute('data-n')||0);
+        var r=speakChipLine(idx, allLines);
+        if(!r.ok && !window.speechSynthesis){ b.textContent='TTS없음'; return; }
+        if(!r.ok) return;
+        paintLrBtn(b, idx, r.n);
+        if(idx===i) paintLineReplayChip(document.getElementById('lineReplayChip'), r.n);
+        try{legionTrack('tts_line_replay',{i:idx,rate:r.rate,n:r.n,zero:wasZero})}catch(e){}
       };
     });
+    var lrc=document.getElementById('lineReplayChip');
+    if(lrc){
+      lrc.onclick=function(){
+        var wasZero=lineCountChipDim(+lrc.getAttribute('data-n')||0);
+        var r=speakChipLine(i, allLines);
+        if(!r.ok && !window.speechSynthesis){ lrc.textContent='TTS없음'; return; }
+        if(!r.ok) return;
+        paintLineReplayChip(lrc, r.n);
+        var nb=lr&&lr.querySelector('[data-lr="'+i+'"]');
+        paintLrBtn(nb, i, r.n);
+        try{legionTrack('tts_zero_chip',{i:i,rate:r.rate,n:r.n,zero:wasZero})}catch(e){}
+      };
+    }
     var sp=document.getElementById('speedChips');
     if(sp) Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(b){
       b.onclick=function(){

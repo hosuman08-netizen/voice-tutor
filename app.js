@@ -112,6 +112,19 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
   function lineCountChip(idx, n){
     return (idx+1)+' · '+(+n||0)+'회';
   }
+  function lineCountChipDim(n){
+    return (+n||0)===0;
+  }
+  function lineCountChipStyle(n){
+    return 'padding:6px 8px;font-size:12px'+(lineCountChipDim(n)?';opacity:.38':'');
+  }
+  function paintLineReplayChip(el, n){
+    if(!el) return;
+    el.textContent='이 문장 '+(+n||0)+'회';
+    el.className='chip'+(lineCountChipDim(n)?' dim':'');
+    el.setAttribute('data-n', String(+n||0));
+    el.style.opacity=lineCountChipDim(n)?'.38':'';
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -162,10 +175,10 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       }).join('')+'</div>'
       +'<div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="ttsReplay" style="flex:1">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
       +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span>'
-      +'<span class="chip" id="lineReplayChip">이 문장 '+lineReplayN(allLines[i])+'회</span></div>'
+      +'<span class="chip'+(lineCountChipDim(lineReplayN(allLines[i]))?' dim':'')+'" id="lineReplayChip" data-n="'+lineReplayN(allLines[i])+'"'+(lineCountChipDim(lineReplayN(allLines[i]))?' style="opacity:.38"':'')+'>이 문장 '+lineReplayN(allLines[i])+'회</span></div>'
       +'<div class="row" id="lineReplay" style="margin-top:8px;flex-wrap:wrap;gap:6px">'+allLines.slice(0,12).map(function(t,idx){
         var n=lineReplayN(t);
-        return '<button class="'+(idx===i?'':'sec')+'" data-lr="'+idx+'" style="padding:6px 8px;font-size:12px">'+lineCountChip(idx,n)+'</button>';
+        return '<button class="'+(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'')+'" data-lr="'+idx+'" data-n="'+n+'" style="'+lineCountChipStyle(n)+'">'+lineCountChip(idx,n)+'</button>';
       }).join('')+'</div>'
       +'<p class="sub" style="margin-top:4px">문장별 횟수칩 · 번호=그 문장 TTS · 현재 카드 유지 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
@@ -237,11 +250,10 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         var rate=speakLine(line);
         var n=bumpLineReplay(line);
         b.textContent=lineCountChip(idx,n);
-        b.className=idx===i?'':'sec';
-        if(idx===i){
-          var lc=document.getElementById('lineReplayChip');
-          if(lc) lc.textContent='이 문장 '+n+'회';
-        }
+        b.className=(idx===i?'':'sec')+(lineCountChipDim(n)?' dim':'');
+        b.setAttribute('data-n', String(n));
+        b.style.opacity=lineCountChipDim(n)?'.38':'';
+        if(idx===i) paintLineReplayChip(document.getElementById('lineReplayChip'), n);
         try{legionTrack('tts_line_replay',{i:idx,rate:rate,n:n})}catch(e){}
       };
     });

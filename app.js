@@ -6,6 +6,8 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
   var root=document.getElementById('app');
   var lines=['Nice to meet you.','How was your day?','Could you say that again?','I will practice every day.','Let us ship it today.','Be like water.','One more rep.','Practice makes progress.','I am getting better.','See you tomorrow.','Speak slowly and clearly.','정진 is every day.'];
   var i=0, left=0, timer=null;
+  function autoOn(){try{return localStorage.getItem('vst_auto')!=='0';}catch(e){return true;}}
+  function autoFlip(){try{localStorage.setItem('vst_auto',autoOn()?'0':'1');}catch(e){}}
   function dayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function loadPin(){try{return JSON.parse(localStorage.getItem('vst_pins')||'[]');}catch(e){return[];}}
   function savePin(p){try{localStorage.setItem('vst_pins',JSON.stringify(p.slice(0,12)));}catch(e){}}
@@ -49,18 +51,23 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     var goal=3, gPct=Math.min(100,Math.round((td.n||0)/goal*100));
     var wp=weekPractice(), mx=Math.max.apply(null,wp.concat([1]));
     var active=wp.filter(function(n){return n>0;}).length;
-    root.innerHTML='<div class="card"><p class="sub">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
+    root.innerHTML='<div class="card">'
+      +'<div style="font-size:24px;line-height:1.4;min-height:72px;font-weight:700;letter-spacing:-0.02em" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
+      +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉</span></button>'
+      +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
+      +'<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">통계 · 15초 · 핀 · 다음</summary>'
+      +'<p class="sub" style="margin-top:8px">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
       +' · 오늘 '+(td.n||0)+'/'+goal+' · 7일 활동일 '+active+' · 진행 '+(i+1)+'/'+allLines.length+'</p>'
       +'<div style="height:6px;background:#1c1826;border-radius:4px;margin:8px 0;overflow:hidden"><i style="display:block;height:100%;width:'+gPct+'%;background:linear-gradient(90deg,#67e8f9,#e0b552)"></i></div>'
       +'<div style="display:flex;align-items:flex-end;gap:3px;height:28px;margin-bottom:8px">'+wp.map(function(n){var h=Math.max(3,Math.round(n/mx*24));return '<div style="flex:1;height:'+h+'px;background:'+(n>0?'#67e8f9':'#2a2438')+';border-radius:2px"></div>';}).join('')+'</div>'
-      +'<div style="font-size:18px;min-height:48px" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
-      +'<div style="font-size:28px;margin:12px 0" id="cd">30</div>'
-      +'<div class="row"><button id="start">30초</button><button class="sec" id="start15">15초</button><button class="sec" id="next">다음</button>'
+      +'<div class="row"><button class="sec" id="start15">15초</button><button class="sec" id="next">다음</button>'
       +'<button class="sec" id="pin">'+(pinned?'핀 해제':'핀')+'</button></div>'
       +'<div class="row" style="margin-top:8px"><input id="customLine" placeholder="내 문장 추가" style="flex:1"/><button class="sec" id="addLine">+</button></div>'
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
-      +'</div>';
+      +'</details></div>';
     document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%allLines.length;render();};
+    var an=document.getElementById('autoNext');
+    if(an) an.onclick=function(){ autoFlip(); render(); try{legionTrack('auto_next',{on:autoOn()})}catch(e){} };
     document.getElementById('pin').onclick=function(){
       var p=loadPin(); var line=allLines[i]; var ix=p.indexOf(line);
       if(ix>=0) p.splice(ix,1); else p.unshift(line);
@@ -94,7 +101,7 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
           clearInterval(timer);
           try{localStorage.setItem('vst_sessions', (+(localStorage.getItem('vst_sessions')||0))+1);}catch(e){}
           bumpToday(sec);
-          i=(i+1)%allLines.length;
+          if(autoOn()) i=(i+1)%allLines.length;
           try{var k='vst_streak';var d=JSON.parse(localStorage.getItem(k)||'{}');var t=new Date().toDateString();
             if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t; var bestN=+(localStorage.getItem('vst_best')||0); if(d.count>bestN)localStorage.setItem('vst_best',d.count); localStorage.setItem(k,JSON.stringify(d));}
           }catch(e){}

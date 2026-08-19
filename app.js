@@ -106,6 +106,12 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     try{ localStorage.setItem('vst_replay_line_'+dayKey(), JSON.stringify(m)); }catch(e){}
     return m[k];
   }
+  function lineReplayN(line){
+    return +replayByLine()[lineReplayKey(line)]||0;
+  }
+  function lineCountChip(idx, n){
+    return (idx+1)+' · '+(+n||0)+'회';
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -155,12 +161,13 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         return '<button class="'+(on?'':'sec')+'" data-rate="'+r+'">'+r+'×</button>';
       }).join('')+'</div>'
       +'<div class="row" style="margin-top:8px;align-items:center"><button class="sec" id="ttsReplay" style="flex:1">재듣기 · '+ttsRate()+'× 유지 · STT/점수 없음</button>'
-      +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span></div>'
+      +'<span class="chip" id="replayChip">재듣기 '+replayN()+'</span>'
+      +'<span class="chip" id="lineReplayChip">이 문장 '+lineReplayN(allLines[i])+'회</span></div>'
       +'<div class="row" id="lineReplay" style="margin-top:8px;flex-wrap:wrap;gap:6px">'+allLines.slice(0,12).map(function(t,idx){
-        var n=replayByLine()[lineReplayKey(t)]||0;
-        return '<button class="'+(idx===i?'':'sec')+'" data-lr="'+idx+'" style="padding:6px 8px;font-size:12px">'+(idx+1)+(n?' ·'+n:'')+'</button>';
+        var n=lineReplayN(t);
+        return '<button class="'+(idx===i?'':'sec')+'" data-lr="'+idx+'" style="padding:6px 8px;font-size:12px">'+lineCountChip(idx,n)+'</button>';
       }).join('')+'</div>'
-      +'<p class="sub" style="margin-top:4px">문장별 재듣기 · 번호=그 문장 TTS · 현재 카드 유지 · STT/점수 없음</p>'
+      +'<p class="sub" style="margin-top:4px">문장별 횟수칩 · 번호=그 문장 TTS · 현재 카드 유지 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -229,8 +236,12 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         if(!window.speechSynthesis){ b.textContent='TTS없음'; return; }
         var rate=speakLine(line);
         var n=bumpLineReplay(line);
-        b.textContent=(idx+1)+' ·'+n;
+        b.textContent=lineCountChip(idx,n);
         b.className=idx===i?'':'sec';
+        if(idx===i){
+          var lc=document.getElementById('lineReplayChip');
+          if(lc) lc.textContent='이 문장 '+n+'회';
+        }
         try{legionTrack('tts_line_replay',{i:idx,rate:rate,n:n})}catch(e){}
       };
     });

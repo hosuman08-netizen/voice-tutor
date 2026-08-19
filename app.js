@@ -54,6 +54,7 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     root.innerHTML='<div class="card">'
       +'<div style="font-size:24px;line-height:1.4;min-height:72px;font-weight:700;letter-spacing:-0.02em" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
       +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉</span></button>'
+      +'<button class="sec" id="ttsCue" style="width:100%;margin-top:8px">원문 듣기 · 브라우저 TTS · 녹음/점수 없음</button>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">통계 · 15초 · 핀 · 다음</summary>'
       +'<p class="sub" style="margin-top:8px">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
@@ -66,6 +67,17 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</details></div>';
     document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%allLines.length;render();};
+    var ttsBtn=document.getElementById('ttsCue');
+    if(ttsBtn) ttsBtn.onclick=function(){
+      var line=allLines[i]||'';
+      if(!window.speechSynthesis){ ttsBtn.textContent='이 브라우저 TTS 없음'; return; }
+      try{ speechSynthesis.cancel(); }catch(e){}
+      var u=new SpeechSynthesisUtterance(line);
+      u.lang=/[가-힯]/.test(line)?'ko-KR':'en-US';
+      u.rate=0.9;
+      speechSynthesis.speak(u);
+      try{legionTrack('tts_cue',{lang:u.lang})}catch(e){}
+    };
     var an=document.getElementById('autoNext');
     if(an) an.onclick=function(){ autoFlip(); render(); try{legionTrack('auto_next',{on:autoOn()})}catch(e){} };
     document.getElementById('pin').onclick=function(){

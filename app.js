@@ -62,6 +62,18 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       localStorage.setItem('vst_pins_by_deck',JSON.stringify(map));
     }catch(e){}
   }
+  var TTS_RATES=['0.75','0.9','1.1'];
+  function ttsRate(){
+    try{
+      var r=String(localStorage.getItem('vst_tts_rate')||'0.9');
+      return TTS_RATES.indexOf(r)>=0?r:'0.9';
+    }catch(e){return '0.9';}
+  }
+  function setTtsRate(r){
+    r=String(r||'');
+    if(TTS_RATES.indexOf(r)<0) return;
+    try{localStorage.setItem('vst_tts_rate',r);}catch(e){}
+  }
   function todayBest(){
     try{
       var k='vst_day_'+dayKey();
@@ -106,6 +118,11 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +'<div style="font-size:24px;line-height:1.4;min-height:72px;font-weight:700;letter-spacing:-0.02em" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
       +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉</span></button>'
       +'<button class="sec" id="ttsCue" style="width:100%;margin-top:8px">원문 듣기 · 브라우저 TTS · 녹음/점수 없음</button>'
+      +'<div class="row" id="speedChips" style="margin-top:8px">'+TTS_RATES.map(function(r){
+        var on=ttsRate()===r;
+        return '<button class="'+(on?'':'sec')+'" data-rate="'+r+'">'+r+'×</button>';
+      }).join('')+'</div>'
+      +'<p class="sub" style="margin-top:4px">속도칩 · 브라우저 TTS만 · STT/점수 없음</p>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
       +'<div class="row" id="selfRate" style="margin-top:8px">'
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
@@ -153,10 +170,20 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       try{ speechSynthesis.cancel(); }catch(e){}
       var u=new SpeechSynthesisUtterance(line);
       u.lang=/[가-힯]/.test(line)?'ko-KR':'en-US';
-      u.rate=0.9;
+      u.rate=parseFloat(ttsRate())||0.9;
       speechSynthesis.speak(u);
-      try{legionTrack('tts_cue',{lang:u.lang})}catch(e){}
+      try{legionTrack('tts_cue',{lang:u.lang,rate:u.rate})}catch(e){}
     };
+    var sp=document.getElementById('speedChips');
+    if(sp) Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(b){
+      b.onclick=function(){
+        setTtsRate(b.getAttribute('data-rate'));
+        Array.prototype.forEach.call(sp.querySelectorAll('[data-rate]'),function(x){
+          x.className=x.getAttribute('data-rate')===ttsRate()?'':'sec';
+        });
+        try{legionTrack('tts_rate',{r:ttsRate()})}catch(e){}
+      };
+    });
     var an=document.getElementById('autoNext');
     if(an) an.onclick=function(){ autoFlip(); render(); try{legionTrack('auto_next',{on:autoOn()})}catch(e){} };
     document.getElementById('pin').onclick=function(){

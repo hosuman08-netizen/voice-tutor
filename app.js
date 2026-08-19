@@ -8,6 +8,18 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
   var i=0, left=0, timer=null;
   function autoOn(){try{return localStorage.getItem('vst_auto')!=='0';}catch(e){return true;}}
   function autoFlip(){try{localStorage.setItem('vst_auto',autoOn()?'0':'1');}catch(e){}}
+  function srsLoad(){try{return JSON.parse(localStorage.getItem('vst_srs')||'{}');}catch(e){return{};}}
+  function srsSave(m){try{localStorage.setItem('vst_srs',JSON.stringify(m));}catch(e){}}
+  function nextDueFrom(start, all){
+    var m=srsLoad(), now=Date.now(), n=all.length;
+    if(!n) return 0;
+    for(var k=1;k<=n;k++){
+      var j=(start+k)%n;
+      var rec=m[all[j]];
+      if(!rec || !rec.due || rec.due<=now) return j;
+    }
+    return (start+1)%n;
+  }
   function dayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
   function loadPin(){try{return JSON.parse(localStorage.getItem('vst_pins')||'[]');}catch(e){return[];}}
   function savePin(p){try{localStorage.setItem('vst_pins',JSON.stringify(p.slice(0,12)));}catch(e){}}
@@ -56,6 +68,10 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉</span></button>'
       +'<button class="sec" id="ttsCue" style="width:100%;margin-top:8px">원문 듣기 · 브라우저 TTS · 녹음/점수 없음</button>'
       +'<button class="sec" id="autoNext" style="width:100%;margin-top:8px">자동다음 '+(autoOn()?'ON':'OFF')+' · 타이머 끝→다음</button>'
+      +'<div class="row" id="selfRate" style="margin-top:8px">'
+      +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
+      +'</div>'
+      +'<p class="sub" style="margin-top:4px">셀프 간격만 · 못함=지금 · 보통=1일 · 잘함=3일 · 점수/STT 없음</p>'
       +'<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">통계 · 15초 · 핀 · 다음</summary>'
       +'<p class="sub" style="margin-top:8px">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
       +' · 오늘 '+(td.n||0)+'/'+goal+' · 7일 활동일 '+active+' · 진행 '+(i+1)+'/'+allLines.length+'</p>'
@@ -66,7 +82,18 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +'<div class="row" style="margin-top:8px"><input id="customLine" placeholder="내 문장 추가" style="flex:1"/><button class="sec" id="addLine">+</button></div>'
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</details></div>';
-    document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=(i+1)%allLines.length;render();};
+    document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=nextDueFrom(i,allLines);render();};
+    var sr=document.getElementById('selfRate');
+    if(sr) Array.prototype.forEach.call(sr.querySelectorAll('[data-g]'),function(b){
+      b.onclick=function(){
+        var g=+b.getAttribute('data-g');
+        var iv=g===0?0:g===1?864e5:3*864e5;
+        var m=srsLoad(); m[allLines[i]]={due:Date.now()+iv,g:g}; srsSave(m);
+        i=nextDueFrom(i,allLines);
+        try{legionTrack('self_rate',{g:g})}catch(e){}
+        render();
+      };
+    });
     var ttsBtn=document.getElementById('ttsCue');
     if(ttsBtn) ttsBtn.onclick=function(){
       var line=allLines[i]||'';
@@ -113,7 +140,7 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
           clearInterval(timer);
           try{localStorage.setItem('vst_sessions', (+(localStorage.getItem('vst_sessions')||0))+1);}catch(e){}
           bumpToday(sec);
-          if(autoOn()) i=(i+1)%allLines.length;
+          if(autoOn()) i=nextDueFrom(i,allLines);
           try{var k='vst_streak';var d=JSON.parse(localStorage.getItem(k)||'{}');var t=new Date().toDateString();
             if(d.last!==t){d.count=(d.last===new Date(Date.now()-864e5).toDateString()?(d.count||0)+1:1);d.last=t; var bestN=+(localStorage.getItem('vst_best')||0); if(d.count>bestN)localStorage.setItem('vst_best',d.count); localStorage.setItem(k,JSON.stringify(d));}
           }catch(e){}

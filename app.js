@@ -4,7 +4,16 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
 
 (function(){
   var root=document.getElementById('app');
-  var lines=['Nice to meet you.','How was your day?','Could you say that again?','I will practice every day.','Let us ship it today.','Be like water.','One more rep.','Practice makes progress.','I am getting better.','See you tomorrow.','Speak slowly and clearly.','정진 is every day.'];
+  var DECKS={
+    greet:{l:'인사', lines:['Hello.','Nice to meet you.','How are you today?','Good morning.','See you later.']},
+    order:{l:'주문', lines:['Can I get a coffee, please?','I would like this one.','How much is it?','For here, please.','Could I have the check?']},
+    refuse:{l:'거절', lines:["I'm sorry, I can't.",'Not today, thank you.','I need to think about it.','Maybe later.','That does not work for me.']},
+    meet:{l:'미팅', lines:['Shall we start?','Could you say that again?','Let us ship it today.','What is the next step?','I will follow up.']}
+  };
+  var DECK_ORDER=['greet','order','refuse','meet'];
+  function deckId(){try{var d=localStorage.getItem('vst_deck')||'greet'; return DECKS[d]?d:'greet';}catch(e){return 'greet';}}
+  function setDeck(id){if(!DECKS[id])return; try{localStorage.setItem('vst_deck',id);}catch(e){} i=0;}
+  function deckLines(){return (DECKS[deckId()]||DECKS.greet).lines.slice();}
   var i=0, left=0, timer=null;
   function autoOn(){try{return localStorage.getItem('vst_auto')!=='0';}catch(e){return true;}}
   function autoFlip(){try{localStorage.setItem('vst_auto',autoOn()?'0':'1');}catch(e){}}
@@ -55,10 +64,10 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     var sess=+(localStorage.getItem('vst_sessions')||0);
     var pins=loadPin();
     var td=todayBest();
-    var custom0=JSON.parse(localStorage.getItem('vst_custom')||'[]'); var all0=lines.concat(custom0); if(i>=all0.length)i=0; var pinned=pins.indexOf(all0[i])>=0;
+    var custom0=JSON.parse(localStorage.getItem('vst_custom')||'[]'); var all0=deckLines().concat(custom0); if(i>=all0.length)i=0; var pinned=pins.indexOf(all0[i])>=0;
     var best=+(localStorage.getItem('vst_best')||0);
     var custom=JSON.parse(localStorage.getItem('vst_custom')||'[]');
-    var allLines=lines.concat(custom);
+    var allLines=deckLines().concat(custom);
     if(i>=allLines.length) i=0;
     var goal=3, gPct=Math.min(100,Math.round((td.n||0)/goal*100));
     var wp=weekPractice(), mx=Math.max.apply(null,wp.concat([1]));
@@ -72,6 +81,11 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +'<button class="sec" data-g="0">못함</button><button class="sec" data-g="1">보통</button><button class="sec" data-g="2">잘함</button>'
       +'</div>'
       +'<p class="sub" style="margin-top:4px">셀프 간격만 · 못함=지금 · 보통=1일 · 잘함=3일 · 점수/STT 없음</p>'
+      +'<div class="row" id="deckChips" style="margin-top:8px">'+DECK_ORDER.map(function(id){
+        var on=deckId()===id;
+        return '<button class="'+(on?'':'sec')+'" data-deck="'+id+'">'+DECKS[id].l+'</button>';
+      }).join('')+'</div>'
+      +'<p class="sub" style="margin-top:4px">상황 4덱 · JSON 로컬 · 계정 없음 · STT/점수 없음</p>'
       +'<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">통계 · 15초 · 핀 · 다음</summary>'
       +'<p class="sub" style="margin-top:8px">문장 '+allLines.length+' · 🔥'+sc+'일'+(best?' · 최장 '+best:'')+' · 세션 '+sess
       +' · 오늘 '+(td.n||0)+'/'+goal+' · 7일 활동일 '+active+' · 진행 '+(i+1)+'/'+allLines.length+'</p>'
@@ -83,6 +97,14 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
       +(pins.length?'<p class="sub" style="margin-top:10px">핀 '+pins.length+' · 탭 점프</p><div id="pinList" class="row" style="flex-wrap:wrap;gap:6px"></div>':'')
       +'</details></div>';
     document.getElementById('next').onclick=function(){try{localStorage.setItem('vst_skips',(+(localStorage.getItem('vst_skips')||0))+1);}catch(e){} i=nextDueFrom(i,allLines);render();};
+    var dc=document.getElementById('deckChips');
+    if(dc) Array.prototype.forEach.call(dc.querySelectorAll('[data-deck]'),function(b){
+      b.onclick=function(){
+        setDeck(b.getAttribute('data-deck'));
+        try{legionTrack('deck',{id:deckId()})}catch(e){}
+        render();
+      };
+    });
     var sr=document.getElementById('selfRate');
     if(sr) Array.prototype.forEach.call(sr.querySelectorAll('[data-g]'),function(b){
       b.onclick=function(){

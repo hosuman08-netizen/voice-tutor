@@ -178,7 +178,7 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
     var active=wp.filter(function(n){return n>0;}).length;
     root.innerHTML='<div class="card">'
       +'<div style="font-size:24px;line-height:1.4;min-height:72px;font-weight:700;letter-spacing:-0.02em" id="line">'+(pinned?'📌 ':'')+allLines[i]+'</div>'
-      +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉</span></button>'
+      +'<button id="start" style="width:100%;padding:22px 16px;font-size:22px;border-radius:14px;margin-top:8px;line-height:1.2"><span id="cd" style="font-size:32px;display:block">30</span><span style="font-size:13px;font-weight:700;opacity:.85">초 섀도잉 · 먼저 듣기</span></button>'
       +'<button class="sec" id="ttsCue" style="width:100%;margin-top:8px">원문 듣기 · 브라우저 TTS · 녹음/점수 없음</button>'
       +'<div class="row" id="speedChips" style="margin-top:8px">'+TTS_RATES.map(function(r){
         var on=ttsRate()===r;
@@ -339,8 +339,26 @@ try{var _dk=new Date().toDateString();var _o=JSON.parse(localStorage.getItem('lw
         }
       },1000);
     }
-    document.getElementById('start').onclick=function(){runTimer(30);};
-    document.getElementById('start15').onclick=function(){runTimer(15);};
+    /* GOLD50 leftover #2: 원문 1회 TTS → 그다음 타이머. 업로드/STT/점수 없음 */
+    function cueThenTimer(sec){
+      var line=allLines[i]||'';
+      var cd=document.getElementById('cd');
+      if(!window.speechSynthesis){ runTimer(sec); return; }
+      if(cd) cd.textContent='♪';
+      try{ speechSynthesis.cancel(); }catch(e){}
+      var u=new SpeechSynthesisUtterance(line);
+      u.lang=/[가-힯]/.test(line)?'ko-KR':'en-US';
+      u.rate=parseFloat(ttsRate())||0.9;
+      var started=false;
+      function go(){ if(started) return; started=true; runTimer(sec); }
+      u.onend=go;
+      u.onerror=go;
+      try{ speechSynthesis.speak(u); }catch(e){ go(); return; }
+      setTimeout(go, Math.min(10000, Math.max(2200, (line.length||8)*350)));
+      try{legionTrack('tts_pre_timer',{sec:sec,rate:u.rate})}catch(e){}
+    }
+    document.getElementById('start').onclick=function(){cueThenTimer(30);};
+    document.getElementById('start15').onclick=function(){cueThenTimer(15);};
   }
   try{legionTrack('session_start',{})}catch(e){}
   render();
